@@ -1,24 +1,18 @@
-import streamlit as st
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
-st.title("StudyMate AI Academic Assistant")
-st.write("Welcome to StudyMate! Use the sidebar to navigate through features.")
+# Load model globally for all pages
+tokenizer = AutoTokenizer.from_pretrained("ibm-granite/granite-3.3-2b-instruct")
+model = AutoModelForCausalLM.from_pretrained("ibm-granite/granite-3.3-2b-instruct")
 
-st.sidebar.title("Navigation")
-st.sidebar.markdown("""
-- PDF Q&A (pages/1_pdf_qa.py)
-- Summarization (pages/2_summarization.py)
-- Citation Management (pages/3_citation.py)
-- Literature Discovery (pages/4_literature.py)
-- Writing Assistant (pages/5_writing.py)
-- Plagiarism Detection (pages/6_plagiarism.py)
-- Text-to-Audio (pages/7_text_to_audio.py)
-- Collaboration Tools (pages/8_collaboration.py)
-- Conversational Interface (pages/9_conversational.py)
-- Workflow Integration (pages/10_integration.py)
-- Adaptive Learning (pages/11_adaptive.py)
-""")
+def chat_llm(user_prompt):
+    messages = [
+        {"role": "user", "content": user_prompt},
+    ]
+    inputs = tokenizer.apply_chat_template(
+        messages, add_generation_prompt=True, tokenize=True,
+        return_dict=True, return_tensors="pt",
+    ).to(model.device)
 
-st.write("""
-This home page links to all the features of StudyMate.  
-Upload documents, ask questions, get summaries, manage citations, and much more—all powered by AI.
-""")
+    outputs = model.generate(**inputs, max_new_tokens=200)
+    response = tokenizer.decode(outputs[0][inputs["input_ids"].shape[-1]:])
+    return response
